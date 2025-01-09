@@ -53,10 +53,10 @@ namespace ZoomScreenSaver
 
         private void InitializeComponents()
         {
-            //this.WindowState = FormWindowState.Maximized;
+            this.WindowState = FormWindowState.Maximized;
             this.WindowState = FormWindowState.Normal;
-            //this.FormBorderStyle = FormBorderStyle.None;
-            //this.TopMost = true;
+            this.FormBorderStyle = FormBorderStyle.None;
+            this.TopMost = true;
             this.Size = new Size(1920, 1080);
             this.BackColor = Color.Black;
             this.DoubleBuffered = true;
