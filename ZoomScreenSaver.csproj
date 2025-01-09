@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PublishAot>false</PublishAot>
+    <UseWindowsForms>true</UseWindowsForms>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StartupObject>ZoomScreenSaver.Program</StartupObject> <!-- Specify the entry point -->
+  </PropertyGroup>
+
+</Project>
