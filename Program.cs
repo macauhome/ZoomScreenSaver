@@ -26,6 +26,9 @@ namespace ZoomScreenSaver
         private readonly float zoomInLimit = 1.2f; //1.5f;// Maximum zoom limit
         private readonly float zoomOutLimit = 1.0f; //1.0f; // Minimum zoom limit
         private int imageDisplayDuration = 5000; // Display duration for each image in milliseconds
+        private float fadeStep = 0.05f; // Opacity change per step
+        private bool fadingOut = false;
+        private System.Windows.Forms.Timer fadeTimer;
         public ScreenSaverForm()
         {
             renderTimer = new System.Windows.Forms.Timer();
@@ -37,6 +40,12 @@ namespace ZoomScreenSaver
             currentPosition = new PointF(0, 0); // Reset panning position
             panSpeedX = 0.001f; // Set pan speed in the X direction (adjust as needed)
             panSpeedY = 0.001f; // Set pan speed in the Y direction (adjust as needed)
+
+            // Initialize fade timer
+            fadeTimer = new System.Windows.Forms.Timer();
+            fadeTimer.Interval = 50; // Adjust fade speed
+            fadeTimer.Tick += FadeTimer_Tick;
+
             LoadSettings();
             InitializeComponents();
             LoadImages();
@@ -64,7 +73,7 @@ namespace ZoomScreenSaver
             this.MouseMove += MainForm_MouseMove;
             this.MouseClick += (s, e) => Application.Exit();
             this.KeyPress += (s, e) => Application.Exit();
-       
+            Cursor.Hide();  // Hide the mouse cursor
         }
 
         private void MainForm_MouseMove(object? sender, MouseEventArgs e)
@@ -80,10 +89,11 @@ namespace ZoomScreenSaver
             if (Directory.Exists(photoPath))
             {
                 imageFiles = Directory.GetFiles(photoPath, "*.jpg");
+                ShuffleArray(imageFiles); // Shuffle the image files
                 if (imageFiles.Length > 0)
                 {
                     //currentImage = Image.FromFile(imageFiles[currentImageIndex]);
-                    DisplayImage(imageFiles[1]);
+                    DisplayImage(imageFiles[0]);
                 }
             }
             else
@@ -91,6 +101,8 @@ namespace ZoomScreenSaver
                 imageFiles = new string[0];
             }
         }
+
+
 
         private void DisplayImage(string imagePath)
         {
@@ -153,9 +165,53 @@ namespace ZoomScreenSaver
             imageDisplayDuration -= (int)(deltaTime * 1000); // Reduce display time
             if (imageDisplayDuration <= 0)
             {
-                SwitchToNextImage();
+                StartFadeOut(); // Start fade-out effect
+                //SwitchToNextImage();
             }
         }
+        private void StartFadeOut()
+        {
+            if (!fadingOut)
+            {
+                fadingOut = true; // Begin fading out
+                fadeTimer.Start(); // Start the fade timer
+            }
+        }
+
+        private void FadeTimer_Tick(object? sender, EventArgs e)
+        {
+            // Fade out
+            if (fadingOut)
+            {
+                this.Opacity -= fadeStep; // Decrease opacity
+
+                if (this.Opacity <= 0.9) // 
+                {
+                    fadeTimer.Stop();
+                    SwitchToNextImage(); // Change image after fade-out
+                    this.Opacity = 0.8; // Ensure opacity 
+                    StartFadeIn(); // Start fade-in effect
+                }
+            }
+            else // Fade in
+            {
+                this.Opacity += fadeStep; // Increase opacity
+
+                if (this.Opacity >= 1) // 
+                {
+                    fadeTimer.Stop();
+                    fadingOut = false; // Reset fade out state
+                }
+            }
+        }
+
+        private void StartFadeIn()
+        {
+            fadingOut = false; // Set flag for fading in
+            this.Opacity = 0.9; // Reset to fully transparent
+            fadeTimer.Start(); // Start fade timer for fading in
+        }
+
 
         private void SwitchToNextImage()
         {
@@ -208,6 +264,27 @@ namespace ZoomScreenSaver
 
             e.Graphics.DrawImage(currentImage, destRect);
         }
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            Cursor.Show(); // Show the cursor when the application is closing
+            currentImage?.Dispose(); // Dispose of the current image
+            renderTimer.Dispose();
+            base.OnFormClosed(e);
+        }
+
+        private void ShuffleArray(string[] array)
+        {
+            Random random = new Random();
+            for (int i = array.Length - 1; i > 0; i--)
+            {
+                int j = random.Next(0, i + 1); // Get a random index from 0 to i
+                // Swap array[i] with the element at the random index
+                string temp = array[i];
+                array[i] = array[j];
+                array[j] = temp;
+            }
+        }
+
 
     }
 
