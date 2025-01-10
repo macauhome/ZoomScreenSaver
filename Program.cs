@@ -76,7 +76,7 @@ namespace ZoomScreenSaver
             }
             this.BackColor = Color.Black;
             this.DoubleBuffered = true;
-            this.KeyDown += (s, e) => { if (e.KeyCode == Keys.Escape) Application.Exit(); };
+            this.KeyDown += (s, e) => Application.Exit(); 
             this.MouseMove += MainForm_MouseMove;
             this.MouseClick += (s, e) => Application.Exit();
             this.KeyPress += (s, e) => Application.Exit();
@@ -240,9 +240,9 @@ namespace ZoomScreenSaver
             panSpeedX = (float)(random.NextDouble() * 2 - 1) * 0.6f; // Random speed between -0.5 and 0.5
             panSpeedY = (float)(random.NextDouble() * 2 - 1) * 0.6f; // Random speed between -0.5 and 0.5
 
-            zoomSpeed = GetRandomBoolean() ? -Math.Abs(zoomSpeed) : Math.Abs(zoomSpeed); // Randomize the zoom direction
-            panSpeedX = GetRandomBoolean() ? -Math.Abs(panSpeedX) : Math.Abs(panSpeedX); // Randomize the pan direction	
-            panSpeedY = GetRandomBoolean() ? -Math.Abs(panSpeedY) : Math.Abs(panSpeedY); // Randomize the pan direction
+            // zoomSpeed = GetRandomBoolean() ? -Math.Abs(zoomSpeed) : Math.Abs(zoomSpeed); // Randomize the zoom direction
+            // panSpeedX = GetRandomBoolean() ? -Math.Abs(panSpeedX) : Math.Abs(panSpeedX); // Randomize the pan direction	
+            // panSpeedY = GetRandomBoolean() ? -Math.Abs(panSpeedY) : Math.Abs(panSpeedY); // Randomize the pan direction
         }
 
         private void ResetAnimation()
