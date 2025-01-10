@@ -75,7 +75,7 @@ namespace ZoomScreenSaver
             this.BackColor = Color.Black;
             this.DoubleBuffered = true;
             this.KeyDown += (s, e) => Application.Exit(); 
-            //this.MouseMove += MainForm_MouseMove;
+            this.MouseMove += MainForm_MouseMove;
             this.MouseClick += (s, e) => Application.Exit();
             this.KeyPress += (s, e) => Application.Exit();
             Cursor.Hide();  // Hide the mouse cursor
@@ -309,7 +309,7 @@ namespace ZoomScreenSaver
         private TextBox photoPathTextBox;
         private NumericUpDown zoomSpeedNumericUpDown;
         private Button saveButton;
-
+        private string configFilePath=string.Empty;
         public SettingsForm()
         {
             photoPathTextBox = new TextBox();
@@ -321,31 +321,114 @@ namespace ZoomScreenSaver
         private void InitializeComponents()
         {
             this.Text = "Screen Saver Settings";
-            this.Size = new Size(400, 200);
+            this.Size = new Size(550, 250);
 
             var photoPathLabel = new Label() { Text = "Photo Path:", Location = new Point(10, 20) };
-            photoPathTextBox = new TextBox() { Location = new Point(100, 20), Width = 250 };
-            var zoomSpeedLabel = new Label() { Text = "Zoom Speed:", Location = new Point(10, 60) };
-            zoomSpeedNumericUpDown = new NumericUpDown() { Location = new Point(100, 60), Minimum = 1, Maximum = 100, Value = 10 };
+            photoPathTextBox = new TextBox() { Location = new Point(120, 20), Width = 250 };
+
+            var selectFolderButton = new Button() { Location =new Point(380,20), Width=80, Text = "Folder" };             selectFolderButton.Click += SelectFolderButton_Click; 
+
+            var zoomSpeedLabel = new Label() { Text = "Zoom Speed(0.01 - 1):", Width= 80,Location = new Point(10, 60) };
+            zoomSpeedNumericUpDown = new NumericUpDown() { Location = new Point(120, 60), Minimum = 0.01M, Maximum = 10M, Value = 0.01M };
 
             saveButton = new Button() { Text = "Save", Location = new Point(150, 100) };
             saveButton.Click += SaveButton_Click;
 
             this.Controls.Add(photoPathLabel);
             this.Controls.Add(photoPathTextBox);
+            this.Controls.Add(selectFolderButton);
             this.Controls.Add(zoomSpeedLabel);
             this.Controls.Add(zoomSpeedNumericUpDown);
             this.Controls.Add(saveButton);
+
+            CheckConfigFile();
+            // Load the configuration file
+            LoadConfigFile();
+        }
+        private void CheckConfigFile()
+        {
+            // Determine the path to the AppData folder
+            string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string appDirectory = Path.Combine(appDataPath, "ZoomScreenSaver");
+            // Create the directory if it doesn't exist
+            if (!Directory.Exists(appDirectory))
+            {
+                Directory.CreateDirectory(appDirectory);
+            }
+            // Set the path to the configuration file
+            configFilePath = Path.Combine(appDirectory, "ZoomScreenSaver.dll.config");
         }
 
+        private void LoadConfigFile()
+        {
+            if (File.Exists(configFilePath))
+            {
+                ExeConfigurationFileMap configFileMap = new ExeConfigurationFileMap();
+                configFileMap.ExeConfigFilename = configFilePath;
+                Configuration config = ConfigurationManager.OpenMappedExeConfiguration(configFileMap, ConfigurationUserLevel.None);
+
+                // Get the appSettings section
+                AppSettingsSection appSettings = (AppSettingsSection)config.GetSection("appSettings");
+
+                // Get the values from the appSettings section
+                string photoPath = appSettings.Settings["PhotoPath"].Value;
+                decimal zoomSpeed = decimal.Parse(appSettings.Settings["ZoomSpeed"].Value);
+
+                // Set the values in the form
+                photoPathTextBox.Text = photoPath;
+                zoomSpeedNumericUpDown.Value = zoomSpeed;
+            }else{
+                File.Copy("ZoomScreenSaver.dll.config", configFilePath);
+            }
+        }
+
+        private void SelectFolderButton_Click(object? sender, EventArgs? e)
+        {
+            using (FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog())
+            {
+                if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
+                {
+                    photoPathTextBox.Text = folderBrowserDialog.SelectedPath;
+                    //MessageBox.Show($"Selected Folder: {selectedPath}");
+                }
+            }
+        }
         private void SaveButton_Click(object? sender, EventArgs e)
         {
-            var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            config.AppSettings.Settings["PhotoPath"].Value = photoPathTextBox.Text;
-            config.AppSettings.Settings["ZoomSpeed"].Value = zoomSpeedNumericUpDown.Value.ToString();
-            config.Save(ConfigurationSaveMode.Modified);
-            ConfigurationManager.RefreshSection("appSettings");
-            MessageBox.Show("Settings saved. Please restart the screen saver.");
+             try
+            {
+                ExeConfigurationFileMap configFileMap = new ExeConfigurationFileMap();
+                configFileMap.ExeConfigFilename = configFilePath;
+                Configuration config = ConfigurationManager.OpenMappedExeConfiguration(configFileMap, ConfigurationUserLevel.None);
+               
+                var settings = config.AppSettings.Settings;
+                if (settings["PhotoPath"] == null || string.IsNullOrEmpty(photoPathTextBox.Text))
+                {
+                    settings.Add("PhotoPath", "c:\\Pictures");
+                }
+                else
+                {
+                    settings["PhotoPath"].Value = photoPathTextBox.Text;
+                }
+
+                if (settings["ZoomSpeed"] == null || zoomSpeedNumericUpDown.Value == 0)
+                {
+                    settings.Add("ZoomSpeed", "0.01");
+                }
+                else
+                {
+                    settings["ZoomSpeed"].Value = zoomSpeedNumericUpDown.Value.ToString();
+                }
+                
+                config.Save(ConfigurationSaveMode.Modified);
+                ConfigurationManager.RefreshSection("appSettings");
+
+                MessageBox.Show("Settings saved successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (ConfigurationErrorsException ex)
+            {
+                MessageBox.Show($"Error saving settings: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
     }
@@ -394,6 +477,7 @@ static class Program
             }
             else    // No arguments - treat like /c
             {
+                //Application.Run(new SettingsForm());
                 Application.Run(new ScreenSaverForm());
             }                 
         }
