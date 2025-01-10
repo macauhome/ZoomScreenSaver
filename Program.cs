@@ -19,13 +19,11 @@ namespace ZoomScreenSaver
         private PointF currentPosition;
         private float currentZoom;
         private float panSpeedX, panSpeedY;
-         private float panDirectionX=-1.0f;
-         private float panDirectionY=-1.0f; // Add variables to control the direction of panning
         private Point lastMousePosition;
         //private PictureBox pictureBox;
         private Image? currentImage;
         private Stopwatch? stopwatch;
-        private readonly float zoomInLimit = 1.1f; //1.5f;// Maximum zoom limit
+        private readonly float zoomInLimit = 1.5f; //1.5f;// Maximum zoom limit
         private readonly float zoomOutLimit = 1.0f; //1.0f; // Minimum zoom limit
         private int imageDisplayDuration = 15000; // Display duration for each image in milliseconds
         private float fadeStep = 0.05f; // Opacity change per step
@@ -77,7 +75,7 @@ namespace ZoomScreenSaver
             this.BackColor = Color.Black;
             this.DoubleBuffered = true;
             this.KeyDown += (s, e) => Application.Exit(); 
-            this.MouseMove += MainForm_MouseMove;
+            //this.MouseMove += MainForm_MouseMove;
             this.MouseClick += (s, e) => Application.Exit();
             this.KeyPress += (s, e) => Application.Exit();
             Cursor.Hide();  // Hide the mouse cursor
@@ -154,10 +152,12 @@ namespace ZoomScreenSaver
             currentPosition.Y += panSpeedY * deltaTime;
             // If we reach the edge, reverse direction
             if(currentImage == null) return;
-            if (currentPosition.X <= 0 || currentPosition.X >= currentImage.Width * currentZoom - this.ClientSize.Width)
+            //if (currentPosition.X <= 0 || currentPosition.X >= currentImage.Width * currentZoom - this.ClientSize.Width)
+            if (currentPosition.X <= 0 || currentPosition.X >= currentImage.Width * currentZoom - (Screen.PrimaryScreen?.Bounds.Size.Width ?? this.ClientSize.Width))
                 panSpeedX = -panSpeedX;
 
-            if (currentPosition.Y <= 0 || currentPosition.Y >= currentImage.Height * currentZoom - this.ClientSize.Height)
+            //if (currentPosition.Y <= 0 || currentPosition.Y >= currentImage.Height * currentZoom - this.ClientSize.Height)
+            if (currentPosition.Y <= 0 || currentPosition.Y >= currentImage.Height * currentZoom - (Screen.PrimaryScreen?.Bounds.Size.Height ?? this.ClientSize.Height))
                 panSpeedY = -panSpeedY;
         }
 
@@ -230,19 +230,22 @@ namespace ZoomScreenSaver
             // Randomize the current position to keep the image on screen
             // Ensure the image stays within the bounds of the window
             if(currentImage == null) return;
-            float maxPosX = (currentImage.Width * currentZoom) - this.ClientSize.Width;
-            float maxPosY = (currentImage.Height * currentZoom) - this.ClientSize.Height;
+            // float maxPosX = (currentImage.Width * currentZoom)  - this.ClientSize.Width;
+            // float maxPosY = (currentImage.Height * currentZoom) - this.ClientSize.Height;
+                float maxPosX = (currentImage.Width * currentZoom)  - (Screen.PrimaryScreen?.Bounds.Size.Width ?? this.ClientSize.Width);
+                float maxPosY = (currentImage.Height * currentZoom) - (Screen.PrimaryScreen?.Bounds.Size.Height ?? this.ClientSize.Height);;
+
 
             currentPosition.X = (float)(random.NextDouble() * Math.Max(0, maxPosX));
             currentPosition.Y = (float)(random.NextDouble() * Math.Max(0, maxPosY));
 
             // Randomize the pan direction
-            panSpeedX = (float)(random.NextDouble() * 2 - 1) * 0.6f; // Random speed between -0.5 and 0.5
-            panSpeedY = (float)(random.NextDouble() * 2 - 1) * 0.6f; // Random speed between -0.5 and 0.5
+            panSpeedX = (float)(random.NextDouble() * 2 - 1) * 20.6f; // Random speed between -0.5 and 0.5
+            panSpeedY = (float)(random.NextDouble() * 2 - 1) * 20.6f; // Random speed between -0.5 and 0.5
 
-            // zoomSpeed = GetRandomBoolean() ? -Math.Abs(zoomSpeed) : Math.Abs(zoomSpeed); // Randomize the zoom direction
-            // panSpeedX = GetRandomBoolean() ? -Math.Abs(panSpeedX) : Math.Abs(panSpeedX); // Randomize the pan direction	
-            // panSpeedY = GetRandomBoolean() ? -Math.Abs(panSpeedY) : Math.Abs(panSpeedY); // Randomize the pan direction
+            zoomSpeed = GetRandomBoolean() ? -Math.Abs(zoomSpeed) : Math.Abs(zoomSpeed); // Randomize the zoom direction
+            panSpeedX = GetRandomBoolean() ? -Math.Abs(panSpeedX) : Math.Abs(panSpeedX); // Randomize the pan direction	
+            panSpeedY = GetRandomBoolean() ? -Math.Abs(panSpeedY) : Math.Abs(panSpeedY); // Randomize the pan direction
         }
 
         private void ResetAnimation()
