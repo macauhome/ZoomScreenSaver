@@ -19,7 +19,8 @@ namespace ZoomScreenSaver
         private PointF currentPosition;
         private float currentZoom;
         private float panSpeedX, panSpeedY;
-         private float panDirectionX, panDirectionY; // Add variables to control the direction of panning
+         private float panDirectionX=-1.0f;
+         private float panDirectionY=-1.0f; // Add variables to control the direction of panning
         private Point lastMousePosition;
         //private PictureBox pictureBox;
         private Image? currentImage;
@@ -76,7 +77,7 @@ namespace ZoomScreenSaver
             this.BackColor = Color.Black;
             this.DoubleBuffered = true;
             this.KeyDown += (s, e) => { if (e.KeyCode == Keys.Escape) Application.Exit(); };
-            //this.MouseMove += MainForm_MouseMove;
+            this.MouseMove += MainForm_MouseMove;
             this.MouseClick += (s, e) => Application.Exit();
             this.KeyPress += (s, e) => Application.Exit();
             Cursor.Hide();  // Hide the mouse cursor
@@ -125,7 +126,7 @@ namespace ZoomScreenSaver
 
         private void RenderFrame()
         {
-             float deltaTime = 0.016f; //0.016f; // Default to 60 FPS
+            float deltaTime = 0.016f; //0.016f; // Default to 60 FPS
             if (stopwatch != null)
             {
                 deltaTime = (float)stopwatch.Elapsed.TotalMilliseconds / 1000.0f; // Convert to seconds
@@ -136,7 +137,6 @@ namespace ZoomScreenSaver
             UpdateZoomAndPan(deltaTime);
             // Update the image display time
             UpdateImageDisplayTime(deltaTime);
-
             // Redraw the form
             Invalidate();
         }
@@ -149,11 +149,9 @@ namespace ZoomScreenSaver
             {
                 zoomSpeed = -zoomSpeed; // Reverse zoom direction
             }
-
             // Update pan position
             currentPosition.X += panSpeedX * deltaTime;
             currentPosition.Y += panSpeedY * deltaTime;
-
             // If we reach the edge, reverse direction
             if(currentImage == null) return;
             if (currentPosition.X <= 0 || currentPosition.X >= currentImage.Width * currentZoom - this.ClientSize.Width)
@@ -239,8 +237,8 @@ namespace ZoomScreenSaver
             currentPosition.Y = (float)(random.NextDouble() * Math.Max(0, maxPosY));
 
             // Randomize the pan direction
-            panSpeedX = (float)(random.NextDouble() * 2 - 1) * 0.01f; // Random speed between -0.5 and 0.5
-            panSpeedY = (float)(random.NextDouble() * 2 - 1) * 0.01f; // Random speed between -0.5 and 0.5
+            panSpeedX = (float)(random.NextDouble() * 2 - 1) * 0.6f; // Random speed between -0.5 and 0.5
+            panSpeedY = (float)(random.NextDouble() * 2 - 1) * 0.6f; // Random speed between -0.5 and 0.5
 
             zoomSpeed = GetRandomBoolean() ? -Math.Abs(zoomSpeed) : Math.Abs(zoomSpeed); // Randomize the zoom direction
             panSpeedX = GetRandomBoolean() ? -Math.Abs(panSpeedX) : Math.Abs(panSpeedX); // Randomize the pan direction	
@@ -255,6 +253,7 @@ namespace ZoomScreenSaver
             panSpeedY = 0.01f; // Set pan speed in Y direction (adjustable)
             imageDisplayDuration = 15000; // Reset display time for new image
         }
+
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -273,6 +272,7 @@ namespace ZoomScreenSaver
             );
 
             e.Graphics.DrawImage(currentImage, destRect);
+            
         }
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
