@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows.Forms;
 using System.Configuration;
 using System.Diagnostics;
+using System.Drawing.Imaging;
 
 namespace ZoomScreenSaver
 {
@@ -26,8 +27,11 @@ namespace ZoomScreenSaver
         private readonly float zoomInLimit = 1.5f; //1.5f;// Maximum zoom limit
         private readonly float zoomOutLimit = 1.0f; //1.0f; // Minimum zoom limit
         private int imageDisplayDuration = 15000; // Display duration for each image in milliseconds
-        private float fadeStep = 0.05f; // Opacity change per step
+        private float fadeStep = 0.1f; // Opacity change per step
         private bool fadingOut = false;
+        private float imageOpacity = 1.0f; // Opacity of the current image (1.0 = fully visible, 0.0 = fully transparent)
+        private TextureBrush? cachedTextureBrush; // Cached TextureBrush for the current image
+
         private System.Windows.Forms.Timer fadeTimer;
         public ScreenSaverForm()
         {
@@ -121,14 +125,14 @@ namespace ZoomScreenSaver
             stopwatch.Start();
 
             //renderTimer = new System.Windows.Forms.Timer();
-            renderTimer.Interval =16; //16; // Approximately 60 FPS
+            renderTimer.Interval =24; //16; // Approximately 60 FPS
             renderTimer.Tick += (s, e) => RenderFrame();
             renderTimer.Start();
         }
 
         private void RenderFrame()
         {
-            float deltaTime = 0.016f; //0.016f; // Default to 60 FPS
+            float deltaTime = 0.024f; //0.016f; // Default to 60 FPS
             if (stopwatch != null)
             {
                 deltaTime = (float)stopwatch.Elapsed.TotalMilliseconds / 1000.0f; // Convert to seconds
@@ -172,13 +176,6 @@ namespace ZoomScreenSaver
 
             if (currentPosition.Y <= 0 || currentPosition.Y >= currentImage.Height * currentZoom - (Screen.PrimaryScreen?.Bounds.Size.Height ?? this.ClientSize.Height))
                 panSpeedY = -panSpeedY;
-            //if (currentPosition.X <= 0 || currentPosition.X >= currentImage.Width * currentZoom - this.ClientSize.Width)
-            // if (currentPosition.X <= 0 || currentPosition.X >= currentImage.Width * currentZoom - (Screen.PrimaryScreen?.Bounds.Size.Width ?? this.ClientSize.Width))
-            //     panSpeedX = -panSpeedX;
-
-            // //if (currentPosition.Y <= 0 || currentPosition.Y >= currentImage.Height * currentZoom - this.ClientSize.Height)
-            // if (currentPosition.Y <= 0 || currentPosition.Y >= currentImage.Height * currentZoom - (Screen.PrimaryScreen?.Bounds.Size.Height ?? this.ClientSize.Height))
-            //     panSpeedY = -panSpeedY;
         }
 
         private void UpdateImageDisplayTime(float deltaTime)
@@ -204,20 +201,20 @@ namespace ZoomScreenSaver
             // Fade out
             if (fadingOut)
             {
-                this.Opacity -= fadeStep; // Decrease opacity
-
-                if (this.Opacity <= 0.9) // 
+                imageOpacity -= fadeStep; // Decrease opacity
+                
+                if (imageOpacity <= 0) // 
                 {
                     fadeTimer.Stop();
                     SwitchToNextImage(); // Change image after fade-out
-                    this.Opacity = 0.8; // Ensure opacity 
+                    imageOpacity = 0; // Ensure opacity 
                     StartFadeIn(); // Start fade-in effect
                 }
             }
             else // Fade in
             {
-                this.Opacity += fadeStep; // Increase opacity
-                if (this.Opacity >= 1) // 
+                imageOpacity += fadeStep; // Increase opacity
+                if (imageOpacity >= 1) // 
                 {
                     fadeTimer.Stop();
                     fadingOut = false; // Reset fade out state
@@ -228,7 +225,7 @@ namespace ZoomScreenSaver
         private void StartFadeIn()
         {
             fadingOut = false; // Set flag for fading in
-            this.Opacity = 0.9; // Reset to fully transparent
+            imageOpacity= 0; // Reset to fully transparent
             fadeTimer.Start(); // Start fade timer for fading in
         }
 
@@ -240,28 +237,43 @@ namespace ZoomScreenSaver
             currentImageIndex = (currentImageIndex + 1) % imageFiles.Length;
             currentImage = Image.FromFile(imageFiles[currentImageIndex]);
             
+            // Create and cache a TextureBrush for the new image
+            if (currentImage != null)
+            {
+                // Create a color matrix to apply opacity to the image
+                ColorMatrix colorMatrix = new ColorMatrix();
+                colorMatrix.Matrix33 = imageOpacity; // Set the opacity (alpha channel)
+
+                // Create an image attributes object to apply the color matrix
+                ImageAttributes imageAttributes = new ImageAttributes();
+                imageAttributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+
+                // Create a TextureBrush with the image and apply the ImageAttributes
+                cachedTextureBrush = new TextureBrush(currentImage, new Rectangle(0, 0, currentImage.Width, currentImage.Height), imageAttributes);
+            }
+            // Reset the display time for the new image
             ResetAnimation();
             // Randomly set initial position
             RandomizePosition();
-            
+            // Reset image opacity for fade-in effect
+            imageOpacity = 0; // Start fully transparent
+
         }
         private void RandomizePosition()
         {
             // Randomize the current position to keep the image on screen
             // Ensure the image stays within the bounds of the window
             if(currentImage == null) return;
-            // float maxPosX = (currentImage.Width * currentZoom)  - this.ClientSize.Width;
-            // float maxPosY = (currentImage.Height * currentZoom) - this.ClientSize.Height;
-                float maxPosX = (currentImage.Width * currentZoom)  - (Screen.PrimaryScreen?.Bounds.Size.Width ?? this.ClientSize.Width);
-                float maxPosY = (currentImage.Height * currentZoom) - (Screen.PrimaryScreen?.Bounds.Size.Height ?? this.ClientSize.Height);;
+            float maxPosX = (currentImage.Width * currentZoom)  - (Screen.PrimaryScreen?.Bounds.Size.Width ?? this.ClientSize.Width);
+            float maxPosY = (currentImage.Height * currentZoom) - (Screen.PrimaryScreen?.Bounds.Size.Height ?? this.ClientSize.Height);;
 
 
             currentPosition.X = (float)(random.NextDouble() * Math.Max(0, maxPosX));
             currentPosition.Y = (float)(random.NextDouble() * Math.Max(0, maxPosY));
 
             // Randomize the pan direction
-            panSpeedX = (float)(random.NextDouble() * 2 - 1) * 20.6f; // Random speed between -0.5 and 0.5
-            panSpeedY = (float)(random.NextDouble() * 2 - 1) * 20.6f; // Random speed between -0.5 and 0.5
+            panSpeedX = (float)(random.NextDouble() * 2 - 1) * 20.0f; // Random speed between -0.5 and 0.5
+            panSpeedY = (float)(random.NextDouble() * 2 - 1) * 20.0f; // Random speed between -0.5 and 0.5
 
             zoomSpeed = GetRandomBoolean() ? -Math.Abs(zoomSpeed) : Math.Abs(zoomSpeed); // Randomize the zoom direction
             panSpeedX = GetRandomBoolean() ? -Math.Abs(panSpeedX) : Math.Abs(panSpeedX); // Randomize the pan direction	
@@ -270,38 +282,67 @@ namespace ZoomScreenSaver
 
         private void ResetAnimation()
         {
-            currentZoom = 1.0f;//zoomOutLimit;
+            currentZoom = zoomOutLimit;
             zoomSpeed = 0.01f; // Adjust zoom speed
             panSpeedX = 0.01f; // Set pan speed in X direction (adjustable)
             panSpeedY = 0.01f; // Set pan speed in Y direction (adjustable)
             imageDisplayDuration = 15000; // Reset display time for new image
+
         }
 
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        base.OnPaint(e);
 
-        protected override void OnPaint(PaintEventArgs e)
+        // Fill the background with black
+        e.Graphics.Clear(Color.Black);
+
+        if (currentImage == null) return;
+
+        // Enable high-quality rendering
+        e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+        e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+        e.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half; // Ensure smooth rendering
+
+        // Create a transformation matrix for panning and zooming
+        using (System.Drawing.Drawing2D.Matrix transform =  new System.Drawing.Drawing2D.Matrix())
         {
-            base.OnPaint(e);
-            if (currentImage == null) return;
+            // Apply zoom
+            transform.Scale(currentZoom, currentZoom);
 
-            // Calculate destination rectangle for drawing
-            float destWidth = currentImage.Width * currentZoom;
-            float destHeight = currentImage.Height * currentZoom;
+            // Apply panning
+            transform.Translate(-currentPosition.X, -currentPosition.Y, System.Drawing.Drawing2D.MatrixOrder.Append);
 
-            var destRect = new RectangleF(
-                -(currentPosition.X * currentZoom),
-                -(currentPosition.Y * currentZoom),
-                destWidth,
-                destHeight
-            );
-
-            e.Graphics.DrawImage(currentImage, destRect);
-            
+            // Apply the transformation to the Graphics object
+            e.Graphics.Transform = transform;
         }
+
+        // Create a color matrix to apply opacity to the image
+        ColorMatrix colorMatrix = new ColorMatrix();
+        colorMatrix.Matrix33 = imageOpacity; // Set the opacity (alpha channel)
+
+        // Create an image attributes object to apply the color matrix
+        ImageAttributes imageAttributes = new ImageAttributes();
+        imageAttributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+
+        // Draw the image at its original size (scaling and panning are handled by the transformation matrix)
+        e.Graphics.DrawImage(
+            currentImage,
+            new Rectangle(0, 0, currentImage.Width, currentImage.Height), // Draw at original size
+            0, 0, currentImage.Width, currentImage.Height, // Source rectangle
+            GraphicsUnit.Pixel,
+            imageAttributes
+        );
+
+        // Reset the transformation matrix
+        e.Graphics.ResetTransform();
+    }
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             Cursor.Show(); // Show the cursor when the application is closing
             currentImage?.Dispose(); // Dispose of the current image
             renderTimer.Dispose();
+            cachedTextureBrush?.Dispose(); // Dispose of the cached TextureBrush
             base.OnFormClosed(e);
         }
 
