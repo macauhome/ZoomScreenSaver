@@ -110,6 +110,10 @@ namespace ZoomScreenSaver
         {
             currentImage = Image.FromFile(imagePath);
             Console.WriteLine("currentImage width and height: " + currentImage.Width + " " + currentImage.Height);             // Calculate initial zoom factor to fit the image within the form's client area
+            // Calculate initial zoom factor to fit the image within the form's client area
+            float zoomX = (float)this.ClientSize.Width / currentImage.Width;
+            float zoomY = (float)this.ClientSize.Height / currentImage.Height;
+            currentZoom = Math.Min(zoomX, zoomY); // Use the smaller zoom factor to fit the image
         }
          private void StartRenderLoop()
         {
@@ -143,22 +147,38 @@ namespace ZoomScreenSaver
         {
             // Update zoom
             currentZoom += zoomSpeed * deltaTime;
-            if (currentZoom >= zoomInLimit || currentZoom <= zoomOutLimit)
-            {
-                zoomSpeed = -zoomSpeed; // Reverse zoom direction
-            }
+             // Ensure zoom stays within limits
+        if (currentZoom >= zoomInLimit)
+        {
+            currentZoom = zoomInLimit;
+            zoomSpeed = -Math.Abs(zoomSpeed); // Reverse zoom direction
+        }
+        else if (currentZoom <= zoomOutLimit)
+        {
+            currentZoom = zoomOutLimit;
+            zoomSpeed = Math.Abs(zoomSpeed); // Reverse zoom direction
+        }
+            // if (currentZoom >= zoomInLimit || currentZoom <= zoomOutLimit)
+            // {   
+            //     zoomSpeed = -zoomSpeed; // Reverse zoom direction
+            // }
             // Update pan position
             currentPosition.X += panSpeedX * deltaTime;
             currentPosition.Y += panSpeedY * deltaTime;
             // If we reach the edge, reverse direction
             if(currentImage == null) return;
-            //if (currentPosition.X <= 0 || currentPosition.X >= currentImage.Width * currentZoom - this.ClientSize.Width)
             if (currentPosition.X <= 0 || currentPosition.X >= currentImage.Width * currentZoom - (Screen.PrimaryScreen?.Bounds.Size.Width ?? this.ClientSize.Width))
                 panSpeedX = -panSpeedX;
 
-            //if (currentPosition.Y <= 0 || currentPosition.Y >= currentImage.Height * currentZoom - this.ClientSize.Height)
             if (currentPosition.Y <= 0 || currentPosition.Y >= currentImage.Height * currentZoom - (Screen.PrimaryScreen?.Bounds.Size.Height ?? this.ClientSize.Height))
                 panSpeedY = -panSpeedY;
+            //if (currentPosition.X <= 0 || currentPosition.X >= currentImage.Width * currentZoom - this.ClientSize.Width)
+            // if (currentPosition.X <= 0 || currentPosition.X >= currentImage.Width * currentZoom - (Screen.PrimaryScreen?.Bounds.Size.Width ?? this.ClientSize.Width))
+            //     panSpeedX = -panSpeedX;
+
+            // //if (currentPosition.Y <= 0 || currentPosition.Y >= currentImage.Height * currentZoom - this.ClientSize.Height)
+            // if (currentPosition.Y <= 0 || currentPosition.Y >= currentImage.Height * currentZoom - (Screen.PrimaryScreen?.Bounds.Size.Height ?? this.ClientSize.Height))
+            //     panSpeedY = -panSpeedY;
         }
 
         private void UpdateImageDisplayTime(float deltaTime)
