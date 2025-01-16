@@ -172,13 +172,6 @@ namespace ZoomScreenSaver
 
             if (currentPosition.Y <= 0 || currentPosition.Y >= currentImage.Height * currentZoom - (Screen.PrimaryScreen?.Bounds.Size.Height ?? this.ClientSize.Height))
                 panSpeedY = -panSpeedY;
-            //if (currentPosition.X <= 0 || currentPosition.X >= currentImage.Width * currentZoom - this.ClientSize.Width)
-            // if (currentPosition.X <= 0 || currentPosition.X >= currentImage.Width * currentZoom - (Screen.PrimaryScreen?.Bounds.Size.Width ?? this.ClientSize.Width))
-            //     panSpeedX = -panSpeedX;
-
-            // //if (currentPosition.Y <= 0 || currentPosition.Y >= currentImage.Height * currentZoom - this.ClientSize.Height)
-            // if (currentPosition.Y <= 0 || currentPosition.Y >= currentImage.Height * currentZoom - (Screen.PrimaryScreen?.Bounds.Size.Height ?? this.ClientSize.Height))
-            //     panSpeedY = -panSpeedY;
         }
 
         private void UpdateImageDisplayTime(float deltaTime)
@@ -187,7 +180,6 @@ namespace ZoomScreenSaver
             if (imageDisplayDuration <= 0)
             {
                 StartFadeOut(); // Start fade-out effect
-                //SwitchToNextImage();
             }
         }
         private void StartFadeOut()
@@ -250,11 +242,8 @@ namespace ZoomScreenSaver
             // Randomize the current position to keep the image on screen
             // Ensure the image stays within the bounds of the window
             if(currentImage == null) return;
-            // float maxPosX = (currentImage.Width * currentZoom)  - this.ClientSize.Width;
-            // float maxPosY = (currentImage.Height * currentZoom) - this.ClientSize.Height;
-                float maxPosX = (currentImage.Width * currentZoom)  - (Screen.PrimaryScreen?.Bounds.Size.Width ?? this.ClientSize.Width);
-                float maxPosY = (currentImage.Height * currentZoom) - (Screen.PrimaryScreen?.Bounds.Size.Height ?? this.ClientSize.Height);;
-
+            float maxPosX = (currentImage.Width * currentZoom)  - (Screen.PrimaryScreen?.Bounds.Size.Width ?? this.ClientSize.Width);
+            float maxPosY = (currentImage.Height * currentZoom) - (Screen.PrimaryScreen?.Bounds.Size.Height ?? this.ClientSize.Height);;
 
             currentPosition.X = (float)(random.NextDouble() * Math.Max(0, maxPosX));
             currentPosition.Y = (float)(random.NextDouble() * Math.Max(0, maxPosY));
