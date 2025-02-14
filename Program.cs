@@ -108,12 +108,37 @@ namespace ZoomScreenSaver
         }
         private void DisplayImage(string imagePath)
         {
-            currentImage = Image.FromFile(imagePath);
-            Console.WriteLine("currentImage width and height: " + currentImage.Width + " " + currentImage.Height);             // Calculate initial zoom factor to fit the image within the form's client area
-            // Calculate initial zoom factor to fit the image within the form's client area
-            float zoomX = (float)this.ClientSize.Width / currentImage.Width;
-            float zoomY = (float)this.ClientSize.Height / currentImage.Height;
-            currentZoom = Math.Min(zoomX, zoomY); // Use the smaller zoom factor to fit the image
+            // Load the original image
+            using (var originalImage = Image.FromFile(imagePath))
+            {
+                Console.WriteLine("Original image width and height: " + originalImage.Width + " " + originalImage.Height);
+
+                // Calculate the new dimensions to fit the screen size
+                int screenWidth = this.ClientSize.Width;
+                int screenHeight = this.ClientSize.Height;
+
+                // Create a new bitmap with the screen dimensions
+                var resizedImage = new Bitmap(screenWidth, screenHeight);
+
+                // Draw the original image onto the new bitmap, scaling it to fit
+                using (var graphics = Graphics.FromImage(resizedImage))
+                {
+                    graphics.DrawImage(originalImage, 0, 0, screenWidth, screenHeight);
+                }
+
+                // Dispose of the previous image if it exists
+                currentImage?.Dispose();
+
+                // Set the resized image as the current image
+                currentImage = resizedImage;
+
+                Console.WriteLine("Resized image width and height: " + currentImage.Width + " " + currentImage.Height);
+
+                // Calculate initial zoom factor to fit the image within the form's client area
+                float zoomX = (float)this.ClientSize.Width / currentImage.Width;
+                float zoomY = (float)this.ClientSize.Height / currentImage.Height;
+                currentZoom = Math.Min(zoomX, zoomY); // Use the smaller zoom factor to fit the image
+            }
         }
          private void StartRenderLoop()
         {
