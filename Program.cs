@@ -249,18 +249,24 @@ namespace ZoomScreenSaver
             fadeTimer.Start(); // Start fade timer for fading in
         }
 
+        private object imageFilesLock = new object();
+
         private void SwitchToNextImage()
         {
             currentImage?.Dispose();
 
-            // Move to the next image
-            currentImageIndex = (currentImageIndex + 1) % imageFiles.Length;
-            currentImage = Image.FromFile(imageFiles[currentImageIndex]);
+            // 线程安全访问imageFiles数组
+            lock (imageFilesLock)
+            {
+                // Move to the next image
+                if (imageFiles.Length == 0) return; // 防止数组长度为0导致除零错误
+                currentImageIndex = (currentImageIndex + 1) % imageFiles.Length;
+                currentImage = Image.FromFile(imageFiles[currentImageIndex]);
+            }
             
             ResetAnimation();
             // Randomly set initial position
             RandomizePosition();
-            
         }
         private void RandomizePosition()
         {
@@ -418,7 +424,7 @@ namespace ZoomScreenSaver
 
         private void SelectFolderButton_Click(object? sender, EventArgs? e)
         {
-            using (FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog())
+            using (FolderBrowserDialog folderBrowserDialog = new ())
             {
                 if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
                 {
